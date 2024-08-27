@@ -57,3 +57,73 @@ fun h : (∃ x : α, r) =>
 
 example (a : α) : r → (∃ x : α, r) :=
   fun t : r => ⟨a, t⟩
+
+example : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r :=
+  Iff.intro
+    fun h : (∃ x, p x ∧ r) =>
+      match h with
+      | ⟨x, t⟩ => ⟨⟨x, t.left⟩, t.right⟩
+    fun h : (∃ x, p x) ∧ r =>
+      match h.left with
+      | ⟨x, t⟩ => ⟨x, ⟨t, h.right⟩⟩
+
+example : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) :=
+  Iff.intro
+    fun h : (∃ x, p x ∨ q x) =>
+      match h with
+      | ⟨x, t⟩ => Or.elim t
+                        (fun h₁ : p x => Or.inl ⟨x, h₁⟩)
+                        (fun h₂ : q x => Or.inr ⟨x, h₂⟩)
+    fun h : (∃ x, p x) ∨ (∃ x, q x) =>
+      Or.elim h
+              fun h₁ : (∃ x, p x) =>
+                match h₁ with
+                | ⟨x, t⟩ => ⟨x, Or.inl t⟩
+              fun h₂ : (∃ x, q x) =>
+                match h₂ with
+                | ⟨x, t⟩ => ⟨x, Or.inr t⟩
+
+
+theorem first_impl : (∀ x, p x) →  ¬ (∃ x, ¬ p x) :=
+    fun h : (∀ x, p x) =>
+      fun h₂ : (∃ x, ¬ p x) =>
+        match h₂ with
+        | ⟨x, t⟩ => t (h x)
+
+theorem second_impl : ¬ (∃ x, ¬ p x) → (∀ x, p x) :=
+  fun h : ¬ (∃ x, ¬ p x) =>
+      fun x  =>
+        Or.elim
+                (Classical.em (p x))
+                (fun hpx : p x => hpx)
+                (fun hnpx : ¬ p x => False.elim (h ⟨x, hnpx⟩))
+
+example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
+  Iff.intro
+    (fun h : (∀ x, p x) =>
+      fun h₂ : (∃ x, ¬ p x) =>
+        match h₂ with
+        | ⟨x, t⟩ => t (h x))
+    (fun h : ¬ (∃ x, ¬ p x) =>
+      fun x  =>
+        Or.elim
+                (Classical.em (p x))
+                (fun hpx : p x => hpx)
+                (fun hnpx : ¬ p x => False.elim (h ⟨x, hnpx⟩)))
+
+example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
+  Iff.intro (first_impl α p) (second_impl α p)
+
+example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
+  Iff.intro
+    (fun h : (∃ x, p x → r) =>
+      match h with
+      | ⟨x₀, pxr⟩ => fun h₁ : (∀ x, p x) => pxr (h₁ x₀))
+    (fun h : (∀ x, p x) → r =>
+      Or.elim
+        (Classical.em (∀ x, p x))
+        (fun h₁ : (∀ x, p x) => ⟨a, (fun hpa : p a => h h₁)⟩)
+        (fun h₂ : ¬ (∀ x, p x) =>
+          have aux : (∃ x ,¬ p x) := Classical.not_forall.mp h₂
+          match aux with
+          | ⟨x₀, t⟩ => ⟨x₀, fun hp : p x₀ => False.elim (t hp)⟩))
