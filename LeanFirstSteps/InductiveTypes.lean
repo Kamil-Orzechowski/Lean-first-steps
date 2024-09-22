@@ -74,3 +74,30 @@ theorem involution (t : List α) : reverse (reverse t) = t := by
       -- We can rewrite `reverse (a :: l)` using the definition of `reverse`.
       rw [reverse, reverse_append, involution, reverse, reverse, List.nil_append]
       calc [a] ++ l = a :: l := rfl
+
+
+-- Another exercise
+
+inductive Term where
+  | const : Nat → Term
+  | var : Nat → Term
+  | plus : Term → Term → Term
+  | times : Term → Term → Term
+
+open Term
+
+def evaluate (term : Term) (values : Nat → Nat) : Nat :=
+  match term with
+  | const n => n
+  | var n => values n
+  | plus t1 t2 => (evaluate t1 values) + (evaluate t2 values)
+  | times t1 t2 => (evaluate t1 values) * (evaluate t2 values)
+
+def sample_term : Term :=
+  plus (times (const 3) (var 1)) (const 2)
+
+def sample_vals : Nat → Nat :=
+  fun _ => 6
+
+
+#eval evaluate sample_term sample_vals
